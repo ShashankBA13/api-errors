@@ -1,4 +1,4 @@
-module api-errors
+module github.com/ShashankBA13/api-errors
 
 go 1.21.1
 
