@@ -3,11 +3,11 @@ package apierrors
 import "fmt"
 
 type AppError struct {
-	Stack   *stack  `json:"stack,omitempty"`
-	Message string  `json:"message"`
-	Code    ErrCode `json:"code"`
-	Field   string  `json:"field,omitempty"`
-	Value   string  `json:"value,omitempty"`
+	Stack   *stackTrace `json:"stack,omitempty"`
+	Message string      `json:"message"`
+	Code    ErrCode     `json:"code"`
+	Field   string      `json:"field,omitempty"`
+	Value   string      `json:"value,omitempty"`
 }
 
 func (e AppError) Error() string {
@@ -17,7 +17,7 @@ func (e AppError) Error() string {
 // NewAppError creates a new instance of AppError.
 func NewAppError(code ErrCode, message, field, value string) AppError {
 	return AppError{
-		Stack:   captureStack(),
+		Stack:   collectStackTrace(),
 		Message: message,
 		Code:    code,
 		Field:   field,
