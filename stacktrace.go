@@ -1,34 +1,52 @@
 package apierrors
 
 import (
-	"fmt"
-	"runtime"
+    "runtime"
+    "fmt"
+    "strings"
 )
 
-// stackTrace holds detailed information about the call stack.
 type stackTrace struct {
-	Frames []string `json:"frames"`
+    Frames []stackFrame `json:"frames"`
 }
 
-// collectStackTrace captures the current call stack, recording the function name, file, and line number.
+type stackFrame struct {
+    Function string `json:"function"`
+    File     string `json:"file"`
+    Line     int    `json:"line"`
+}
+
 func collectStackTrace() *stackTrace {
-	var pcs [32]uintptr
-	n := runtime.Callers(3, pcs[:]) // Skip 3 frames to get to the caller.
-	var frames []string
-
-	for _, pc := range pcs[:n] {
-		fn := runtime.FuncForPC(pc)
-		file, line := fn.FileLine(pc)
-		frames = append(frames, fmt.Sprintf("at %s\n\t%s:%d", fn.Name(), file, line))
-	}
-
-	return &stackTrace{Frames: frames}
+    var pcs [32]uintptr
+    n := runtime.Callers(3, pcs[:])
+    var frames []stackFrame
+    for _, pc := range pcs[:n] {
+        fn := runtime.FuncForPC(pc)
+        if fn != nil {
+            file, line := fn.FileLine(pc)
+            frames = append(frames, stackFrame{
+                Function: fn.Name(),
+                File:     file,
+                Line:     line,
+            })
+        }
+    }
+    return &stackTrace{Frames: frames}
 }
 
-// enhanceWithCause adds the original stack trace to the current one.
-func (st *stackTrace) enhanceWithCause(cause *stackTrace) {
-	if cause != nil {
-		st.Frames = append(st.Frames, "caused by:")
-		st.Frames = append(st.Frames, cause.Frames...)
-	}
+// Improved String method for more readable stack traces.
+func (st *stackTrace) String() string {
+    var sb strings.Builder
+    sb.WriteString("Stack Trace:\n")
+    sb.WriteString("---------------------------------------------------\n")
+    for i, frame := range st.Frames {
+        sb.WriteString(fmt.Sprintf("#%d - Function: %s\n", i+1, frame.Function))
+        sb.WriteString(fmt.Sprintf("     Location: %s:%d\n", frame.File, frame.Line))
+        sb.WriteString("---------------------------------------------------\n")
+    }
+    return sb.String()
+}
+
+func (st *stackTrace) enhanceWithCause(original *stackTrace) {
+    st.Frames = append(st.Frames, original.Frames...)
 }
